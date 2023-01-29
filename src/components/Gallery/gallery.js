@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { string, shape, array, func, number } from 'prop-types';
 import { InView } from 'react-intersection-observer';
 
@@ -22,9 +22,12 @@ const Gallery = props => {
     const talonProps = useGallery();
     const { storeConfig } = talonProps;
 
+    const [currentItemsList, setCurrentItemsList] = useState(currentPage);
+
     const loadNextItems = () => {
-        if (currentPage < totalPages) {
-            fetchCategoryDataMethod(currentPage + 1, true);
+        if (currentItemsList < totalPages) {
+            fetchCategoryDataMethod(currentItemsList + 1, true);
+            setCurrentItemsList(currentItemsList + 1);
         }
     };
 
