@@ -34,11 +34,6 @@ const FilterSidebar = React.lazy(() =>
     import('@magento/venia-ui/lib/components/FilterSidebar')
 );
 
-const FilterModal = React.lazy(() => import('../../components/FilterModal'));
-const FilterSidebar = React.lazy(() =>
-    import('../../components/FilterSidebar')
-);
-
 const CategoryContent = props => {
     const {
         categoryId,
@@ -47,10 +42,12 @@ const CategoryContent = props => {
         pageControl,
         sortProps,
         pageSize,
-        fetchCategoryDataMethod
+        fetchCategoryDataMethod,
+        currentPage,
+        totalPages,
     } = props;
     const [currentSort] = sortProps;
-    
+
     const talonProps = useCategoryContent({
         categoryId,
         data,
@@ -134,19 +131,19 @@ const CategoryContent = props => {
         }
 
         const gallery = totalPagesFromData ? (
-            <Gallery items={items} />
+            <Gallery
+                items={items}
+                fetchCategoryDataMethod={fetchCategoryDataMethod}
+                currentPage={currentPage}
+                totalPages={totalPages}
+            />
         ) : (
             <GalleryShimmer items={items} />
         );
 
-        const pagination = totalPagesFromData ? (
-            <Pagination pageControl={pageControl} />
-        ) : null;
-
         return (
             <Fragment>
                 <section className={classes.gallery}>{gallery}</section>
-                <div className={classes.pagination}>{pagination}</div>
             </Fragment>
         );
     }, [
@@ -221,7 +218,9 @@ CategoryContent.propTypes = {
         heading: string,
         categoryInfo: string,
         headerButtons: string,
-        fetchCategoryDataMethod: func
+        fetchCategoryDataMethod: func,
+        currentPage: number,
+        totalPages: number
     }),
     // sortProps contains the following structure:
     // [{sortDirection: string, sortAttribute: string, sortText: string},
@@ -229,4 +228,3 @@ CategoryContent.propTypes = {
     sortProps: array,
     pageSize: number
 };
-

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { string, shape, array, func, number } from 'prop-types';
 import { InView } from 'react-intersection-observer';
 
@@ -17,10 +17,16 @@ import { useGallery } from '@magento/peregrine/lib/talons/Gallery/useGallery';
 // в этом компоненте нужно добавить классы, на которые из useCategory хука будет срабатывать обсервер ( интерсекшн )
 // и триггерить запрос на подгрузку новых товаров
 const Gallery = props => {
-    const { items } = props;
+    const { items, fetchCategoryDataMethod, currentPage, totalPages } = props;
     const classes = useStyle(defaultClasses, props.classes);
     const talonProps = useGallery();
     const { storeConfig } = talonProps;
+
+    const loadNextItems = () => {
+        if (currentPage < totalPages) {
+            fetchCategoryDataMethod(currentPage + 1, true);
+        }
+    };
 
     const galleryItems = useMemo(
         () =>
@@ -28,7 +34,21 @@ const Gallery = props => {
                 if (item === null) {
                     return <GalleryItemShimmer key={index} />;
                 }
-                return (
+                return index + 1 === items.length ? (
+                    <InView
+                        as="div"
+                        onChange={(inView, entry) =>
+                            inView ? loadNextItems() : null
+                        }
+                        triggerOnce={true}
+                    >
+                        <GalleryItem
+                            key={item.id}
+                            item={item}
+                            storeConfig={storeConfig}
+                        />
+                    </InView>
+                ) : (
                     <GalleryItem
                         key={item.id}
                         item={item}
@@ -40,8 +60,14 @@ const Gallery = props => {
     );
 
     return (
-        <div data-cy="Gallery-root" className={classes.root} aria-busy="false">
-            <div className={classes.items}>{galleryItems}</div>
+        <div>
+            <div
+                data-cy="Gallery-root"
+                className={classes.root}
+                aria-busy="false"
+            >
+                <div className={classes.items}>{galleryItems}</div>
+            </div>
         </div>
     );
 };
@@ -51,7 +77,10 @@ Gallery.propTypes = {
         filters: string,
         items: string,
         pagination: string,
-        root: string
+        root: string,
+        currentPage: number,
+        totalPages: number,
+        fetchCategoryData: func
     }),
     items: array.isRequired
 };

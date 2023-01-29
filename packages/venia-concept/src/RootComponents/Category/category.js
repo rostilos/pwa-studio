@@ -1,9 +1,9 @@
 import React, { Fragment } from 'react';
-import { shape, string } from 'prop-types';
+import { shape, string, number, func } from 'prop-types';
 import { useCategory } from './useCategory';
 import { useStyle } from '@magento/venia-ui/lib/classify';
 
-import CategoryContent from '@magento/venia-ui/lib/RootComponents/Category/categoryContent';
+import CategoryContent from './categoryContent';
 import defaultClasses from '@magento/venia-ui/lib/RootComponents/Category/category.module.css';
 import { Meta } from '@magento/venia-ui/lib/components/Head';
 import { GET_PAGE_SIZE } from '@magento/venia-ui/lib/RootComponents/Category/category.gql';
@@ -34,7 +34,10 @@ const Category = props => {
         pageControl,
         sortProps,
         pageSize,
-        categoryNotFound
+        categoryNotFound,
+        fetchCategoryData,
+        currentPage,
+        totalPages
     } = talonProps;
 
     const classes = useStyle(defaultClasses, props.classes);
@@ -62,6 +65,9 @@ const Category = props => {
         <Fragment>
             <Meta name="description" content={metaDescription} />
             <CategoryContent
+                currentPage={currentPage}
+                totalPages={totalPages}
+                fetchCategoryDataMethod={fetchCategoryData}
                 categoryId={uid}
                 classes={classes}
                 data={categoryData}
@@ -78,7 +84,10 @@ Category.propTypes = {
     classes: shape({
         gallery: string,
         root: string,
-        title: string
+        title: string,
+        currentPage: number,
+        totalPages: number,
+        fetchCategoryData: func
     }),
     uid: string
 };

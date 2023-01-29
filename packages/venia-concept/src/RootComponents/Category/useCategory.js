@@ -35,12 +35,12 @@ import DEFAULT_OPERATIONS from '@magento/peregrine/lib/talons/RootComponents/Cat
  * @returns {array}     result.sortProps - Category sorting parameters.
  * @returns {number}    result.pageSize - Category total pages.
  */
- export const useCategory = props => {
+export const useCategory = props => {
     const {
         id,
         queries: { getPageSize }
     } = props;
-
+    const [isInfiniteLoadRequest, setInfiniteLoadRequest] = useState(false);
     const operations = mergeOperations(DEFAULT_OPERATIONS, props.operations);
     const { getCategoryQuery, getFilterInputsQuery } = operations;
 
@@ -83,8 +83,24 @@ import DEFAULT_OPERATIONS from '@magento/peregrine/lib/talons/RootComponents/Cat
         error,
         data
     } = queryResponse;
-    const { search } = useLocation();
 
+    const [productItemsData, setProductItemsData] = useState([]);
+    useEffect(() => {
+        if (data && data.products) {
+            if (Object.keys(productItemsData).length === 0) {
+                setProductItemsData(data.products.items);
+            } else if (isInfiniteLoadRequest) {
+                setProductItemsData(prevState => [
+                    ...prevState,
+                    ...data.products.items
+                ]);
+            } else {
+                setProductItemsData(data.products.items);
+            }
+        }
+    }, [data]);
+
+    const { search } = useLocation();
     const isBackgroundLoading = !!data && categoryLoading;
 
     // Update the page indicator if the GraphQL query is in flight.
@@ -120,6 +136,19 @@ import DEFAULT_OPERATIONS from '@magento/peregrine/lib/talons/RootComponents/Cat
 
     // Run the category query immediately and whenever its variable values change.
     useEffect(() => {
+        fetchCategoryData();
+    }, [
+        currentPage,
+        currentSort,
+        filterTypeMap,
+        id,
+        pageSize,
+        runQuery,
+        search
+    ]);
+
+    const fetchCategoryData = (page = currentPage, isInfiniteLoadRequest) => {
+        setInfiniteLoadRequest(isInfiniteLoadRequest);
         // Wait until we have the type map to fetch product data.
         if (!filterTypeMap.size || !pageSize) {
             return;
@@ -139,22 +168,14 @@ import DEFAULT_OPERATIONS from '@magento/peregrine/lib/talons/RootComponents/Cat
 
         runQuery({
             variables: {
-                currentPage: Number(currentPage),
+                currentPage: Number(page),
                 id: id,
                 filters: newFilters,
                 pageSize: Number(pageSize),
                 sort: { [currentSort.sortAttribute]: currentSort.sortDirection }
             }
-        });
-    }, [
-        currentPage,
-        currentSort,
-        filterTypeMap,
-        id,
-        pageSize,
-        runQuery,
-        search
-    ]);
+        }); 
+    };
 
     const totalPagesFromData = data
         ? data.products.page_info.total_pages
@@ -199,7 +220,17 @@ import DEFAULT_OPERATIONS from '@magento/peregrine/lib/talons/RootComponents/Cat
         }
     }, [currentSort, previousSearch, search, setCurrentPage]);
 
-    const categoryData = categoryLoading && !data ? null : data;
+    let categoryData = categoryLoading && !data ? null : data;
+
+    if (data && data.products && data.products.items) {
+        categoryData = {
+            ...data,
+            products: {
+                ...data?.products,
+                items: productItemsData
+            }
+        };
+    }
     const categoryNotFound =
         !categoryLoading && data && data.categories.items.length === 0;
     const metaDescription =
@@ -225,6 +256,9 @@ import DEFAULT_OPERATIONS from '@magento/peregrine/lib/talons/RootComponents/Cat
         pageControl,
         sortProps,
         pageSize,
-        categoryNotFound
+        categoryNotFound,
+        fetchCategoryData,
+        currentPage,
+        totalPages
     };
 };
